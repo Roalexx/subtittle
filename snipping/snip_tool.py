@@ -5,15 +5,18 @@ import sys
 
 class SnipTool(QWidget):
     def mousePressEvent(self, event):
-        self.origin = event.pos()
-        self.rubberBand.setGeometry(QRect(self.origin, QSize()))
+        self.origin = self.mapToGlobal(event.pos())  # global pozisyon
+        self.rubberBand.setGeometry(QRect(event.pos(), QSize()))
         self.rubberBand.show()
 
     def mouseMoveEvent(self, event):
-        self.rubberBand.setGeometry(QRect(self.origin, event.pos()).normalized())
+        current = event.pos()
+        self.rubberBand.setGeometry(QRect(self.origin - self.mapToGlobal(QPoint(0, 0)), current).normalized())
 
     def mouseReleaseEvent(self, event):
-        self.selected_rect = self.rubberBand.geometry()
+        end = self.mapToGlobal(event.pos())
+        self.selected_rect = QRect(self.origin, end).normalized()
+        print("Seçilen gerçek bölge:", self.selected_rect)
         self.close()
 
 def get_selected_screen_region():
@@ -21,14 +24,17 @@ def get_selected_screen_region():
 
     snipper = SnipTool()
 
-    # ✅ Gerekli tüm ayarları burada yapıyoruz (init içinde değil)
+    # Tam ekran yap: birleşik ekranlar (negatifler dahil)
+    screens = QGuiApplication.screens()
+    virtual_rect = screens[0].geometry()
+    for screen in screens[1:]:
+        virtual_rect = virtual_rect.united(screen.geometry())
+
     snipper.setWindowOpacity(0.3)
     snipper.setWindowFlags(snipper.windowFlags() |
                            Qt.FramelessWindowHint |
                            Qt.WindowStaysOnTopHint)
-
-    # Sadece birincil ekranı kapsasın (siyah ekran engellenir)
-    snipper.setGeometry(QGuiApplication.primaryScreen().geometry())
+    snipper.setGeometry(virtual_rect)
 
     snipper.rubberBand = QRubberBand(QRubberBand.Rectangle, snipper)
     snipper.origin = QPoint()

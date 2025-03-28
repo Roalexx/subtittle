@@ -3,3 +3,8 @@ pytesseract
 pyautogui
 Pillow
 googletrans==4.0.0rc1
+mss
+openai
+python-dotenv
+requests
+deepl
