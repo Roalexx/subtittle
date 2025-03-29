@@ -3,3 +3,5 @@ pytesseract
 mss
 python-dotenv
 deepl
+pywin32
+opencv-python

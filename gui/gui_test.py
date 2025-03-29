@@ -6,7 +6,7 @@ import time
 from tkinter import messagebox
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import ocr.ocr_loop as ocr_loop
-from snipping.snip_tool import get_selected_screen_region
+from snipping.snip_tool import get_selected_point
 
 ocr_running = False
 ocr_region = None
@@ -22,7 +22,7 @@ def start_ocr():
         ocr_region = ocr_loop.get_region_from_screen()
         if ocr_region is None:
             return
-        display_region = get_selected_screen_region()
+        display_region = get_selected_point()
         if display_region is None:
             return
         ocr_gen = ocr_loop.ocr_loop(ocr_region)
@@ -32,16 +32,12 @@ def start_ocr():
             for translated_text in ocr_gen:
                 if not ocr_running:
                     break
-                result_label.config(text=f"Çevrilen Metin: {translated_text}")
-                result_label.update_idletasks()
-
+                
         threading.Thread(target=run_ocr, daemon=True).start()
 
 def stop_ocr():
     global ocr_running
-    ocr_running = False
-    result_label.config(text="OCR işlemi durduruldu.")
-    result_label.update_idletasks()
+    ocr_running = False    
 
 root = tk.Tk()
 root.title("Python Process Controller")
@@ -51,8 +47,5 @@ start_button.pack(pady=10)
 
 stop_button = tk.Button(root, text="Durdur", command=stop_ocr)
 stop_button.pack(pady=10)
-
-result_label = tk.Label(root, text="Çevrilen metin burada görünecek", wraplength=300, font=("Arial", 14, "bold"), bg="lightgray", fg="black", relief="flat", padx=10, pady=5)
-result_label.place(x=50, y=100)
 
 root.mainloop()
