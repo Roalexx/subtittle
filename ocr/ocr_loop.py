@@ -20,24 +20,9 @@ if DEEPL_API_KEY is None:
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-rect = get_selected_screen_region()
-if rect is None:
-    print("Hiçbir alan seçilmedi.")
-    sys.exit()
-
-region = {
-    "top": rect.y(),
-    "left": rect.x(),
-    "width": rect.width(),
-    "height": rect.height()
-}
-
-print("OCR İzleme bölgesi:", region)
-
-previous_text = ""
-
+# OCR ve çeviri için gerekli fonksiyonları hazırlıyoruz.
 def translate_with_deepL(text):
-    if text.strip() == "": 
+    if text.strip() == "":
         return ""  
     try:
         translator = deepl.Translator(DEEPL_API_KEY)
@@ -48,8 +33,7 @@ def translate_with_deepL(text):
         return None
 
 def ocr_loop(region):
-    global previous_text  
-
+    previous_text = ""  
     with mss.mss() as sct:
         while True:
             screenshot = sct.grab(region)
@@ -70,7 +54,28 @@ def ocr_loop(region):
 
             time.sleep(1)
 
+# OCR alanını almak ve kullanmak için fonksiyon
+def get_region_from_screen():
+    rect = get_selected_screen_region()
+    if rect is None:
+        print("Hiçbir alan seçilmedi.")
+        sys.exit()
 
+    region = {
+        "top": rect.y(),
+        "left": rect.x(),
+        "width": rect.width(),
+        "height": rect.height()
+    }
+
+    return region
+
+# Ana fonksiyonu dışarıda çağırmak için düzenledik.
 if __name__ == "__main__":
-    while True: 
-        ocr_loop(region) 
+    region = get_region_from_screen()
+    print("OCR İzleme bölgesi:", region)
+
+    ocr_gen = ocr_loop(region)  # Generator'ı başlatıyoruz
+    while True:
+        translated_text = next(ocr_gen)  # Her seferinde bir değer alıyoruz
+        print("Yeni Çevrilen Metin:", translated_text)
