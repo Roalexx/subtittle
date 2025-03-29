@@ -19,8 +19,8 @@ Bu proje, oyunlardaki İngilizce altyazıları otomatik olarak gerçek zamanlı 
 ### 1. Projeyi İndir
 
 ```bash
-git clone https://github.com/kullaniciadi/proje-adi.git
-cd proje-adi
+git clone git@github.com:Roalexx/subtittle.git
+cd subtittle
 ```
 
 ### 2. Virtual Environment (venv) Kur
@@ -142,8 +142,8 @@ This project automatically detects English subtitles in games in real time, tran
 
 1. Clone the Project
 
-git clone https://github.com/yourusername/project-name.git
-cd project-name
+git clone git@github.com:Roalexx/subtittle.git
+cd subtittle
 
 2. Create a Virtual Environment
 
