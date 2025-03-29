@@ -41,6 +41,7 @@ def start_ocr():
             for translated_text in ocr_gen:
                 if not ocr_running:
                     break
+
                 create_transparent_window(
                     text=translated_text,
                     position=display_region,
