@@ -47,20 +47,29 @@ def translate_with_deepL(text):
         print(f"Çeviri hatası: {e}")
         return None
 
-with mss.mss() as sct:
-    while True:
-        screenshot = sct.grab(region)
-        img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
+def ocr_loop(region):
+    global previous_text  
 
-        current_text = pytesseract.image_to_string(img, lang='eng').strip()
+    with mss.mss() as sct:
+        while True:
+            screenshot = sct.grab(region)
+            img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
 
-        if current_text != previous_text and current_text != "":            
-            translated_text = translate_with_deepL(current_text)
-            if translated_text:
-                print("Çevrilen Metin:", translated_text)
-            else:
-                print("Çeviri yapılamadı.")
+            current_text = pytesseract.image_to_string(img, lang='eng').strip()
 
-            previous_text = current_text
+            if current_text != previous_text and current_text != "":
+                translated_text = translate_with_deepL(current_text)
 
-        time.sleep(1) 
+                if translated_text:
+                    print("Çevrilen Metin:", translated_text)
+                else:
+                    print("Çeviri yapılamadı.")
+
+                previous_text = current_text
+
+            time.sleep(1)
+
+
+if __name__ == "__main__":
+    while True: 
+        ocr_loop(region) 
