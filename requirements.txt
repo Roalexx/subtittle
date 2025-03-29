@@ -5,3 +5,4 @@ python-dotenv
 deepl
 pywin32
 opencv-python
+pyinstaller
