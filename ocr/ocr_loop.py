@@ -62,6 +62,7 @@ def ocr_loop(region):
 
                 if translated_text:
                     print("Çevrilen Metin:", translated_text)
+                    yield translated_text
                 else:
                     print("Çeviri yapılamadı.")
 
