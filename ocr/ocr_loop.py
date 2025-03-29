@@ -20,7 +20,6 @@ if DEEPL_API_KEY is None:
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-# OCR ve çeviri için gerekli fonksiyonları hazırlıyoruz.
 def translate_with_deepL(text):
     if text.strip() == "":
         return ""  
@@ -70,12 +69,11 @@ def get_region_from_screen():
 
     return region
 
-# Ana fonksiyonu dışarıda çağırmak için düzenledik.
 if __name__ == "__main__":
     region = get_region_from_screen()
     print("OCR İzleme bölgesi:", region)
 
-    ocr_gen = ocr_loop(region)  # Generator'ı başlatıyoruz
+    ocr_gen = ocr_loop(region)  
     while True:
-        translated_text = next(ocr_gen)  # Her seferinde bir değer alıyoruz
+        translated_text = next(ocr_gen)  
         print("Yeni Çevrilen Metin:", translated_text)
