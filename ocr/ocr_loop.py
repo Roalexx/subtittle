@@ -1,6 +1,5 @@
 import sys
 import os
-import requests
 import deepl
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytesseract
@@ -31,29 +30,26 @@ def translate_with_deepL(text):
         print(f"Çeviri hatası: {e}")
         return None
 
-def ocr_loop(region):
-    previous_text = ""  
+def ocr_loop(region, should_continue, callback):
+    previous_text = ""
     with mss.mss() as sct:
-        while True:
+        while should_continue():
             screenshot = sct.grab(region)
             img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
 
             current_text = pytesseract.image_to_string(img, lang='eng').strip()
+            print("OCR:", current_text)
 
             if current_text != previous_text and current_text != "":
                 translated_text = translate_with_deepL(current_text)
-
                 if translated_text:
-                    print("Çevrilen Metin:", translated_text)
-                    yield translated_text
-                else:
-                    print("Çeviri yapılamadı.")
-
+                    print("Çevrilen:", translated_text)
+                    callback(translated_text)
                 previous_text = current_text
 
-            time.sleep(1)
+            time.sleep(3)
 
-# OCR alanını almak ve kullanmak için fonksiyon
+
 def get_region_from_screen():
     rect = get_selected_screen_region()
     if rect is None:
@@ -73,7 +69,7 @@ if __name__ == "__main__":
     region = get_region_from_screen()
     print("OCR İzleme bölgesi:", region)
 
-    ocr_gen = ocr_loop(region)  
+    ocr_gen = ocr_loop(region)
     while True:
         translated_text = next(ocr_gen)  
         print("Yeni Çevrilen Metin:", translated_text)

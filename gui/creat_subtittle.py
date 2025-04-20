@@ -1,4 +1,3 @@
-import sys
 import threading
 from PyQt5 import QtWidgets, QtCore, QtGui
 

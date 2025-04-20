@@ -1,130 +1,138 @@
 import sys
 import os
-import tkinter as tk
-from tkinter import messagebox, ttk
-import threading
-import subprocess
-import base64
-from multiprocessing import freeze_support
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal
 import ocr.ocr_loop as ocr_loop
 from snipping.snip_tool import get_selected_point
+from gui.subtitle_worker import SubtitleWindow
 
-ocr_running = False
-ocr_region = None
-display_region = None
-subtitle_process = None
+class MainWindow(QtWidgets.QWidget):
+    update_subtitle = QtCore.pyqtSignal(str)
 
-# Global ayarlar
-background_color = "black"
-text_color = "white"
-font_size = 18
-opacity = 0.8
+    def subtitle_window_set_text_safe(self, text):
+        if self.subtitle_window:
+            self.subtitle_window.set_text(text)
+    def __init__(self):
+        super().__init__()
 
-def show_subtitle(text, position, bg, color, size, opacity):
-    global subtitle_process
+        self.ocr_running = False
+        self.ocr_region = None
+        self.display_region = None
 
-    # Önceki altyazı varsa kapat
-    if subtitle_process and subtitle_process.poll() is None:
-        subtitle_process.terminate()
+        self.setWindowTitle("Altyazı Ayarları")
+        self.setFixedSize(300, 300)
 
-    encoded_text = base64.b64encode(text.encode('utf-8')).decode('utf-8')
-    script_path = "gui/subtitle_worker.py"
+        self.bg = "black"
+        self.text_color = "white"
+        self.font_size = 18
+        self.opacity = 0.8
+        self.subtitle_window = None
 
-    subtitle_process = subprocess.Popen([
-        sys.executable,
-        script_path,
-        "--text", encoded_text,
-        "--x", str(position[0]),
-        "--y", str(position[1]),
-        "--bg", bg,
-        "--color", color,
-        "--size", str(size),
-        "--opacity", str(opacity)
-    ])
+        self.init_ui()
+        self.update_subtitle.connect(self.subtitle_window_set_text_safe)
 
-def start_ocr():
-    global ocr_running, ocr_region, display_region
-    if not ocr_running:
-        show_alert()
-        ocr_region = ocr_loop.get_region_from_screen()
-        if ocr_region is None:
-            return
-        display_region = get_selected_point()
-        if display_region is None:
-            return
+    def init_ui(self):
+        layout = QtWidgets.QVBoxLayout()
 
-        ocr_gen = ocr_loop.ocr_loop(ocr_region)
-        ocr_running = True
+        # Background color
+        self.bg_input = QtWidgets.QLineEdit(self.bg)
+        layout.addWidget(QtWidgets.QLabel("Background Color:"))
+        layout.addWidget(self.bg_input)
 
-        def run_ocr():
-            for translated_text in ocr_gen:
-                if not ocr_running:
-                    break
-                show_subtitle(
-                    text=translated_text,
-                    position=display_region,
-                    bg=background_color,
-                    color=text_color,
-                    size=font_size,
-                    opacity=opacity
-                )
+        # Text color
+        self.tc_input = QtWidgets.QLineEdit(self.text_color)
+        layout.addWidget(QtWidgets.QLabel("Text Color:"))
+        layout.addWidget(self.tc_input)
 
-        threading.Thread(target=run_ocr, daemon=True).start()
+        # Font size
+        self.font_input = QtWidgets.QLineEdit(str(self.font_size))
+        layout.addWidget(QtWidgets.QLabel("Font Size:"))
+        layout.addWidget(self.font_input)
 
-def stop_ocr():
-    global ocr_running
-    ocr_running = False
+        # Opacity
+        self.opacity_input = QtWidgets.QComboBox()
+        self.opacity_input.addItems([str(round(x * 0.1, 1)) for x in range(1, 11)])
+        self.opacity_input.setCurrentText(str(self.opacity))
+        layout.addWidget(QtWidgets.QLabel("Opacity:"))
+        layout.addWidget(self.opacity_input)
 
-def show_alert():
-    messagebox.showinfo("Bölge Seçimi", "Önce OCR bölgesini, sonra altyazının çıkacağı yeri seç.")
+        # Buttons
+        apply_btn = QtWidgets.QPushButton("Ayarları Uygula")
+        apply_btn.clicked.connect(self.apply_settings)
+        layout.addWidget(apply_btn)
 
-def main_gui():
-    global background_color, text_color, font_size, opacity
+        start_btn = QtWidgets.QPushButton("Başlat")
+        start_btn.clicked.connect(self.start_ocr)
+        layout.addWidget(start_btn)
 
-    root = tk.Tk()
-    root.title("Altyazı Ayarları")
+        stop_btn = QtWidgets.QPushButton("Durdur")
+        stop_btn.clicked.connect(self.stop_ocr)
+        layout.addWidget(stop_btn)
 
-    tk.Label(root, text="Background Color:").pack()
-    bg_entry = tk.Entry(root)
-    bg_entry.insert(0, background_color)
-    bg_entry.pack()
+        self.setLayout(layout)
 
-    tk.Label(root, text="Text Color:").pack()
-    tc_entry = tk.Entry(root)
-    tc_entry.insert(0, text_color)
-    tc_entry.pack()
-
-    tk.Label(root, text="Font Size:").pack()
-    font_entry = tk.Entry(root)
-    font_entry.insert(0, str(font_size))
-    font_entry.pack()
-
-    tk.Label(root, text="Opacity:").pack()
-    opacity_dropdown = ttk.Combobox(root, values=[round(x * 0.1, 1) for x in range(1, 11)])
-    opacity_dropdown.set(str(opacity))
-    opacity_dropdown.pack()
-
-    def apply_settings():
-        global background_color, text_color, font_size, opacity
+    def apply_settings(self):
         try:
-            font_size = int(font_entry.get())
-            opacity = float(opacity_dropdown.get())
+            self.font_size = int(self.font_input.text())
+            self.opacity = float(self.opacity_input.currentText())
+            self.bg = self.bg_input.text()
+            self.text_color = self.tc_input.text()
+            QtWidgets.QMessageBox.information(self, "Başarılı", "Ayarlar kaydedildi.")
         except ValueError:
-            messagebox.showerror("Hata", "Lütfen geçerli değerler girin.")
-            return
-        background_color = bg_entry.get()
-        text_color = tc_entry.get()
-        messagebox.showinfo("Başarılı", "Ayarlar kaydedildi.")
+            QtWidgets.QMessageBox.critical(self, "Hata", "Geçerli değerler girin.")
 
-    tk.Button(root, text="Ayarları Uygula", command=apply_settings).pack(pady=5)
-    tk.Button(root, text="Başlat", command=start_ocr).pack(pady=10)
-    tk.Button(root, text="Durdur", command=stop_ocr).pack(pady=10)
+    def start_ocr(self):
+        if not self.ocr_running:
+            QtWidgets.QMessageBox.information(self, "Bölge Seçimi", "OCR bölgesi ve altyazı çıkış konumu seçilecek.")
+            self.ocr_region = ocr_loop.get_region_from_screen()
+            if self.ocr_region is None:
+                print("Hiçbir alan seçilmedi.")
+                return
+            print(self.ocr_region)
+            self.display_region = get_selected_point()
+            if self.display_region is None:
+                return
 
-    root.mainloop()
+            self.subtitle_window = SubtitleWindow()
+            self.subtitle_window.set_text_position((self.display_region[0], self.display_region[1]))
+            self.subtitle_window.set_text_prop(self.text_color, self.font_size)
+            self.subtitle_window.set_opacity(self.opacity)
+            self.subtitle_window._bg_color = self.bg
+            self.subtitle_window.show()
 
-if __name__ == '__main__':
-    freeze_support()
-    main_gui()
+            self.ocr_running = True
+            self.run_ocr()
+
+    def run_ocr(self):
+        self.ocr_running = True
+
+        def should_continue():
+            return self.ocr_running
+
+        def callback(translated_text):
+            self.update_subtitle.emit(translated_text)
+
+        def loop():
+            ocr_loop.ocr_loop(self.ocr_region, should_continue, callback)
+
+        QtCore.QThreadPool.globalInstance().start(QtRunnable(loop))
+
+    def stop_ocr(self):
+        self.ocr_running = False
+        def subtitle_window_set_text_safe(self, text):
+            if self.subtitle_window:
+                self.subtitle_window.set_text(text)
+
+class QtRunnable(QtCore.QRunnable):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+
+    def run(self):
+        self.fn()
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
