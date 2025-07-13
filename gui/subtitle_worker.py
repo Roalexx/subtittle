@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
+import win32gui, win32con
 
 class SubtitleWindow(QtWidgets.QLabel):
     def __init__(self):
@@ -11,7 +12,7 @@ class SubtitleWindow(QtWidgets.QLabel):
         )
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.setWordWrap(True)
-        self.setFixedWidth(720)
+        self.setFixedWidth(500)
         self._bg_color = "red"
         self.adjustSize()
 
@@ -24,7 +25,7 @@ class SubtitleWindow(QtWidgets.QLabel):
 
     def set_text_position(self, position):
         self.move(position[0], position[1])
-    
+
     def set_opacity(self, opacity):
         opacity_effect = QtWidgets.QGraphicsOpacityEffect()
         opacity_effect.setOpacity(opacity)
@@ -33,9 +34,8 @@ class SubtitleWindow(QtWidgets.QLabel):
     def set_text(self, text):
         self.setText(text)
         self.adjustSize()
-
-        self.show()  
-        self.hide_timer.start(3000)
+        self.show()
+        self.hide_timer.start(10000)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
@@ -46,3 +46,10 @@ class SubtitleWindow(QtWidgets.QLabel):
         painter.setPen(QtCore.Qt.NoPen)
         painter.drawRoundedRect(self.rect(), 15, 15)
         super().paintEvent(event)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        hwnd = int(self.winId())
+        ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+        ex_style |= win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
